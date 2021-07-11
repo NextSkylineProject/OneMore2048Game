@@ -10,6 +10,7 @@ abstract class SwipeDirectionDetector {
 	private float startX;
 	private float startY;
 	private final int touchSlop;
+	private boolean isDetected;
 	
 	public abstract void onDirectionDetected(Direction direction);
 	
@@ -27,32 +28,30 @@ abstract class SwipeDirectionDetector {
 				break;
 			case MotionEvent.ACTION_CANCEL:
 			case MotionEvent.ACTION_UP:
-				if (getDistance(event) > touchSlop) {
+				if (!isDetected) {
+					onDirectionDetected(Direction.NOT_DETECTED);
+				}
+				
+				startX = startY = 0.0F;
+				isDetected = false;
+				break;
+			case MotionEvent.ACTION_MOVE:
+				if (!isDetected && getDistance(event) > touchSlop) {
+					isDetected = true;
 					float x = event.getX();
 					float y = event.getY();
 					
 					Direction direction = Direction.get(getAngle(startX, startY, x, y));
 					onDirectionDetected(direction);
 				}
-				
-				startX = startY = 0.0F;
-				break;
-			case MotionEvent.ACTION_MOVE:
-//				if (getDistance(event) > touchSlop) {
-//					float x = event.getX();
-//					float y = event.getY();
-//
-//					Direction direction = Direction.get(getAngle(startX, startY, x, y));
-//					onDirectionDetected(direction);
-//				}
 				break;
 		}
 	}
 	
 	private float getDistance(MotionEvent ev) {
 		float distanceSum = 0;
-		float dx = (ev.getX(0) - startX);
-		float dy = (ev.getY(0) - startY);
+		float dx = ev.getX(0) - startX;
+		float dy = ev.getY(0) - startY;
 		distanceSum += Math.sqrt(dx * dx + dy * dy);
 		
 		return distanceSum;
@@ -65,6 +64,7 @@ abstract class SwipeDirectionDetector {
 	
 	
 	public enum Direction {
+		NOT_DETECTED,
 		UP,
 		DOWN,
 		LEFT,
