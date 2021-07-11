@@ -1,11 +1,14 @@
 package com.nextskylineproject.onemore2048game;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.util.TypedValue;
+import android.view.MotionEvent;
 import android.view.View;
 
 import java.util.Random;
@@ -17,6 +20,8 @@ public class GameView extends View {
 	private int rows = 5;
 	private final TileGridManager tileGridManager;
 	private int defTileSize = 64;
+	private SwipeDirectionDetector directionDetector;
+	
 	
 	public GameView(Context context, AttributeSet attr) {
 		super(context);
@@ -26,6 +31,29 @@ public class GameView extends View {
 		
 		defTileSize = (int) TypedValue.applyDimension(
 				TypedValue.COMPLEX_UNIT_DIP, defTileSize, getResources().getDisplayMetrics());
+		
+		directionDetector = new SwipeDirectionDetector(context) {
+			public void onDirectionDetected(Direction direction) {
+				Log.d(TAG, "onDirectionDetected: " + direction.name());
+				switch (direction) {
+					case UP:
+						tileGridManager.swipeUp();
+						break;
+					case DOWN:
+						tileGridManager.swipeDown();
+						break;
+					case LEFT:
+						tileGridManager.swipeLeft();
+						break;
+					
+					case RIGHT:
+						tileGridManager.swipeRight();
+						break;
+				}
+				invalidate();
+			}
+		};
+		
 		
 		/*
 		animator = ValueAnimator.ofFloat(0f, 1f);
@@ -105,6 +133,12 @@ public class GameView extends View {
 		tileGridManager.draw(canvas, paint);
 	}
 	
+	@SuppressLint("ClickableViewAccessibility")
+	@Override
+	public boolean onTouchEvent(MotionEvent event) {
+		directionDetector.onTouchEvent(event);
+		return true; //super.onTouchEvent(event);
+	}
 	
 	public void testAct1() {
 		tileGridManager.clearGrid();
