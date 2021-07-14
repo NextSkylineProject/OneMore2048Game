@@ -1,31 +1,57 @@
 package com.nextskylineproject.onemore2048game;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.util.AttributeSet;
-import android.util.TypedValue;
+import android.view.MotionEvent;
 import android.view.View;
 
-import java.util.Random;
 
 public class GameView extends View {
 	private static final String TAG = "Debug";
 	private Paint paint;
 	private int columns = 4;
-	private int rows = 5;
+	private int rows = 4;
 	private final TileGridManager tileGridManager;
-	private int defTileSize = 64;
+	private final SwipeDirectionDetector directionDetector;
 	
-	public GameView(Context context, AttributeSet attr) {
+	private int tileSize;
+	private int paddingLeft;
+	private int paddingTop;
+	private int offsetToCenterX;
+	private int offsetToCenterY;
+	
+	public GameView(Context context) {
 		super(context);
 		
 		tileGridManager = new TileGridManager();
-		tileGridManager.createGrid(columns, rows);
-		
-		defTileSize = (int) TypedValue.applyDimension(
-				TypedValue.COMPLEX_UNIT_DIP, defTileSize, getResources().getDisplayMetrics());
+		directionDetector = new SwipeDirectionDetector(context) {
+			public void onDirectionDetected(Direction direction) {
+				switch (direction) {
+					case UP:
+						tileGridManager.swipeUp();
+						tileGridManager.placeRandomTile();
+						break;
+					case DOWN:
+						tileGridManager.swipeDown();
+						tileGridManager.placeRandomTile();
+						break;
+					case LEFT:
+						tileGridManager.swipeLeft();
+						tileGridManager.placeRandomTile();
+						break;
+					
+					case RIGHT:
+						tileGridManager.swipeRight();
+						tileGridManager.placeRandomTile();
+						break;
+				}
+				invalidate();
+			}
+		};
 		
 		/*
 		animator = ValueAnimator.ofFloat(0f, 1f);
@@ -58,39 +84,56 @@ public class GameView extends View {
 */
 	}
 	
-	public GameView(Context context) {
-		this(context, null);
-	}
-	
-	@Override
-	protected void onAttachedToWindow() {
-		super.onAttachedToWindow();
-		// Момент прикрепления вьюшки к окну
-		// тут удобнее всего искать остальные вьюшки лайаута если нужно (???)
+	public GameView(Context context, AttributeSet attr) {
+		this(context);
 	}
 	
 	@Override
 	protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
 		super.onMeasure(widthMeasureSpec, heightMeasureSpec);
 		
-		int desiredWidth = defTileSize * columns;
-		int desiredHeight = defTileSize * rows;
-		desiredWidth = desiredWidth + getPaddingLeft() + getPaddingRight();
-		desiredHeight = desiredHeight + getPaddingTop() + getPaddingBottom();
+		paddingLeft = getPaddingLeft();
+		paddingTop = getPaddingTop();
 		
-		int width = resolveSize(desiredWidth, widthMeasureSpec);
-		int height = resolveSize(desiredHeight, heightMeasureSpec);
+		int inputWidth = MeasureSpec.getSize(widthMeasureSpec);
+		int inputHeight = MeasureSpec.getSize(heightMeasureSpec);
+		int areaWidth = inputWidth - getPaddingLeft() - getPaddingRight();
+		int areaHeight = inputHeight - getPaddingTop() - getPaddingBottom();
+		int tileWidth = areaWidth / columns;
+		int tileHeight = areaHeight / rows;
+		tileSize = Math.min(tileWidth, tileHeight);
 		
-		tileGridManager.updateViewParams(this);
+		int tileAreaWidth = tileSize * columns;
+		int tileAreaHeight = tileSize * rows;
+		int desireWidth = tileAreaWidth + getPaddingLeft() + getPaddingRight();
+		int desireHeight = tileAreaHeight + getPaddingTop() + getPaddingBottom();
+		int outputWidth = resolveSize(desireWidth, widthMeasureSpec);
+		int outputHeight = resolveSize(desireHeight, heightMeasureSpec);
 		
-		/*
-		int widthSize = MeasureSpec.getSize(widthMeasureSpec);
 		int widthMode = MeasureSpec.getMode(widthMeasureSpec);
-		int heightSize = MeasureSpec.getSize(heightMeasureSpec);
 		int heightMode = MeasureSpec.getMode(heightMeasureSpec);
-		*/
 		
-		setMeasuredDimension(width, height);
+		switch (heightMode) {
+			case MeasureSpec.UNSPECIFIED: // 0
+			case MeasureSpec.AT_MOST: // -2147483648
+				offsetToCenterY = 0;
+				break;
+			case MeasureSpec.EXACTLY: // 1073741824
+				offsetToCenterY = (areaHeight - tileAreaHeight) / 2;
+				break;
+		}
+		
+		switch (widthMode) {
+			case MeasureSpec.UNSPECIFIED: // 0
+			case MeasureSpec.AT_MOST: // -2147483648
+				offsetToCenterX = 0;
+				break;
+			case MeasureSpec.EXACTLY: // 1073741824
+				offsetToCenterX = (areaWidth - tileAreaWidth) / 2;
+				break;
+		}
+		
+		setMeasuredDimension(outputWidth, outputHeight);
 	}
 	
 	@Override
@@ -99,41 +142,62 @@ public class GameView extends View {
 			paint = new Paint();
 		}
 		
-		paint.setColor(Color.WHITE);
-		canvas.drawRect(0, 0, getWidth(), getHeight(), paint);
-		
-		tileGridManager.draw(canvas, paint);
+		paint.setColor(Color.LTGRAY);
+		canvas.drawRoundRect(0, 0, getWidth(), getHeight(), 50, 50, paint);
+		paint.setColor(Color.GRAY);
+		canvas.drawRoundRect(paddingLeft, paddingTop, getWidth() - paddingLeft,
+				getHeight() - paddingTop, 25,
+				25, paint);
+//		paint.setColor(Color.GRAY);
+//		for (int y = 0; y < rows; y++) {
+//			for (int x = 0; x < columns; x++) {
+//				int rx = x * tileSize + paddingLeft + offsetToCenterX;
+//				int ry = y * tileSize + paddingTop + offsetToCenterY;
+//
+//				float[] hsv = {(1 + x) * (1 + y) * (rows + columns), 1, 1};
+//
+//				paint.setColor(Color.HSVToColor(hsv));
+//				canvas.drawRect(rx, ry, rx + tileSize, ry + tileSize, paint);
+//			}
+//		}
+		if (!tileGridManager.getTiles().isEmpty()) {
+			for (Tile tile : tileGridManager.getTiles()) {
+				int rx = tile.x * tileSize + paddingLeft + offsetToCenterX;
+				int ry = tile.y * tileSize + paddingTop + offsetToCenterY;
+				
+				paint.setColor(Color.RED);
+				canvas.drawRoundRect(rx, ry, rx + tileSize, ry + tileSize, 25, 25, paint);
+				paint.setColor(Color.BLACK);
+				int fs = tileSize / 4;
+				paint.setTextSize(fs);
+				canvas.drawText("Val:" + tile.value, rx + 10, ry + fs, paint);
+			}
+		}
 	}
 	
 	
-	public void testAct1() {
+	@SuppressLint("ClickableViewAccessibility")
+	@Override
+	public boolean onTouchEvent(MotionEvent event) {
+		directionDetector.onTouchEvent(event);
+		return true;
+	}
+	
+	
+	public void restart() {
 		tileGridManager.clearGrid();
 		invalidate();
 	}
 	
-	public void testAct2() {
-		tileGridManager.placeRandomTile();
-		invalidate();
+	public void stepBack() {
+		requestLayout();
 	}
 	
-	public void testAct3() {
-		tileGridManager.swipeRight();
-		invalidate();
+	public void createGrid(int columns, int rows) {
+		this.columns = columns;
+		this.rows = rows;
+		tileGridManager.createGrid(columns, rows);
+		
+		requestLayout();
 	}
-	
-	public void testAct4() {
-		tileGridManager.swipeLeft();
-		invalidate();
-	}
-	
-	public void testAct5() {
-		tileGridManager.swipeUp();
-		invalidate();
-	}
-	
-	public void testAct6() {
-		tileGridManager.swipeDown();
-		invalidate();
-	}
-	
 }
