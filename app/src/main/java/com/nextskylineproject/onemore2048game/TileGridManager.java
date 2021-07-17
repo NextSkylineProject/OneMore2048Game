@@ -1,12 +1,11 @@
 package com.nextskylineproject.onemore2048game;
 
+import android.util.Log;
+
 import java.util.ArrayList;
 import java.util.Random;
 
-class TileGridManager {
-	private TileGrid tileGrid;
-	private int columns;
-	private int rows;
+class TileGridManager extends TileGrid {
 	private final Random random;
 	
 	public TileGridManager() {
@@ -14,39 +13,28 @@ class TileGridManager {
 		random.setSeed(12345L);
 	}
 	
-	public ArrayList<Tile> getTiles() {
-		return tileGrid.getTiles();
-	}
-	
 	public void createGrid(int columns, int rows) {
-		this.columns = columns;
-		this.rows = rows;
-		tileGrid = new TileGrid();
-		tileGrid.setSize(columns, rows);
+		setSize(columns, rows);
 	}
 	
 	public void placeRandomTile() {
 		int rx = random.nextInt(columns);
 		int ry = random.nextInt(rows);
-		if(!tileGrid.createTile(rx, ry, 2)) {
+		if(!createTile(rx, ry, 2)) {
 			placeRandomTile();
 		}
 	}
 	
-	public void clearGrid() {
-		tileGrid.cleanup();
-	}
-	
 	public void swipeRight() {
-		tileGrid.moveFieldRight();
+		moveFieldRight();
 	}
 	public void swipeLeft() {
-		tileGrid.moveFieldLeft();
+		moveFieldLeft();
 	}
 	public void swipeUp() {
-		tileGrid.moveFieldUp();
+		moveFieldUp();
 	}
 	public void swipeDown() {
-		tileGrid.moveFieldDown();
+		moveFieldDown();
 	}
 }

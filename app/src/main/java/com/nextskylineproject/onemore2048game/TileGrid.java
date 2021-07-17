@@ -1,16 +1,14 @@
 package com.nextskylineproject.onemore2048game;
 
-import android.util.Log;
-
 import java.util.ArrayList;
 
 // TODO добавить интерфейс для каллбеков под анимацию и метрику
-class TileGrid {
+abstract class TileGrid {
 	private static final String TAG = "Debug";
-	private ArrayList<Tile> tiles;
 	private Tile[][] tilesGrid;
-	private int columns;
-	private int rows;
+	protected ArrayList<Tile> tiles;
+	protected int columns;
+	protected int rows;
 	
 	
 	public void setSize(int c, int r) {
@@ -29,10 +27,8 @@ class TileGrid {
 			tilesGrid[x][y] = freshTile;
 			tiles.add(freshTile);
 			
-			Log.d(TAG, "createTile: " + x + " " + y + " - Success");
 			return true;
 		} else {
-			Log.d(TAG, "createTile: " + x + " " + y + " - Fail, tile already exist!");
 			return false;
 		}
 	}
@@ -63,11 +59,11 @@ class TileGrid {
 		return getTileOrNull(x, y) != null;
 	}
 	
-	private void lvlUpTile(Tile tile) {
+	protected void lvlUpTile(Tile tile) {
 		tile.value = tile.value * 2;
 	}
 	
-	private void mergeTiles(Tile main, Tile second) {
+	protected void mergeTiles(Tile main, Tile second) {
 		if (main == null || second == null) return;
 		
 		if (main.equalsVal(second)) {
