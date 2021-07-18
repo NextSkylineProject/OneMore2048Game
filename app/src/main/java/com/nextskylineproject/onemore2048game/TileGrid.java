@@ -1,157 +1,226 @@
 package com.nextskylineproject.onemore2048game;
 
+import android.util.Log;
+
 import java.util.ArrayList;
 
-// TODO добавить интерфейс для каллбеков под анимацию и метрику
 abstract class TileGrid {
 	private static final String TAG = "Debug";
 	private Tile[][] tilesGrid;
-	protected ArrayList<Tile> tiles;
+	private ArrayList<Tile> tiles;
 	protected int columns;
 	protected int rows;
 	
+	protected abstract void tileSpawnAction(Tile tile, int x, int y);
 	
-	public void setSize(int c, int r) {
-		this.columns = c;
-		this.rows = r;
-		tiles = new ArrayList<>(c * r);
-		tilesGrid = new Tile[c][r];
+	protected abstract void tileMoveAction(MoveEvent moveEvent);
+	
+	protected void setSize(int columns, int rows) {
+		this.columns = columns;
+		this.rows = rows;
+		tiles = new ArrayList<>(columns * rows);
+		tilesGrid = new Tile[columns][rows];
 	}
 	
-	// Base
+	protected ArrayList<Tile> getTiles() {
+		return tiles;
+	}
 	
-	public boolean createTile(int x, int y, int value) {
-		//TODO check here x and y on a grid
-		if (!checkCord(x, y)) {
-			Tile freshTile = new Tile(x, y, value);
-			tilesGrid[x][y] = freshTile;
-			tiles.add(freshTile);
-			
-			return true;
-		} else {
-			return false;
+	private Tile getTileOrNull(int x, int y) {
+		return tilesGrid[x][y];
+	}
+	
+	protected boolean isNotEmpty(int x, int y) {
+		return getTileOrNull(x, y) != null;
+	}
+	
+	/**
+	 * Base functions
+	 */
+	
+	protected void createTile(int x, int y, int value) {
+		if (isNotEmpty(x, y)) {
+			return;
 		}
+		
+		Tile freshTile = new Tile(x, y, value);
+		tilesGrid[x][y] = freshTile;
+		tiles.add(freshTile);
+		
+		tileSpawnAction(freshTile, x, y);
+		
+		return;
 	}
 	
-	public void removeTile(Tile tile) {
+	protected void removeTile(Tile tile) {
 		if (tile == null) return;
+		Log.d(TAG, "removeTile: " + tile);
+		
 		tilesGrid[tile.x][tile.y] = null;
 		tiles.remove(tile);
 	}
 	
-	public void cleanup() {
-		for (int i = 0; i < columns; i++) {
-			for (int j = 0; j < rows; j++) {
-				removeTile(getTileOrNull(i, j));
-			}
-		}
-	}
-	
-	public ArrayList<Tile> getTiles() {
-		return tiles;
-	}
-	
-	public Tile getTileOrNull(int x, int y) {
-		return tilesGrid[x][y];
-	}
-	
-	public boolean checkCord(int x, int y) {
-		return getTileOrNull(x, y) != null;
-	}
-	
-	protected void lvlUpTile(Tile tile) {
-		tile.value = tile.value * 2;
-	}
-	
-	protected void mergeTiles(Tile main, Tile second) {
+	protected void mergeTile(Tile main, Tile second) {
 		if (main == null || second == null) return;
+		Log.d(TAG, "mergeTile: " + main + " + " + second);
 		
 		if (main.equalsVal(second)) {
 			removeTile(second);
-			lvlUpTile(main);
+			main.value = main.value * 2;
+			replaceTile(main, second.x, second.y);
 		}
 	}
 	
-	// Moves
-	
-	private void moveTile(Tile tile, int x, int y) {
-		if (tile == null) return;
-		if (checkCord(x, y)) return;
-		if (tile == getTileOrNull(x, y)) return;
-		
-		tilesGrid[x][y] = tile;
+	protected void replaceTile(Tile tile, int x, int y) {
 		tilesGrid[tile.x][tile.y] = null;
+		tilesGrid[x][y] = tile;
 		tile.x = x;
 		tile.y = y;
 	}
 	
+	/**
+	 * Tile Move functions
+	 */
+	
 	private void moveTileRight(Tile tile) {
 		if (tile == null) return;
-		int tx = tile.x;
-		int ty = tile.y;
+		int x = tile.x;
+		int y = tile.y;
+		MoveEvent moveEvent = new MoveEvent();
 		
-		if (tx < columns - 1) {
-			if (!checkCord(tx + 1, ty)) {
-				moveTile(tile, tx + 1, ty);
-				moveTileRight(tile);
-			} else {
-				Tile tile2 = getTileOrNull(tx + 1, ty);
-				mergeTiles(tile2, tile);
+		if (x != columns - 1) {
+			while (x < columns - 1) {
+				x++;
+				
+				if (isNotEmpty(x, y)) {
+					Tile tile2 = getTileOrNull(x, y);
+					
+					if (!tile.equalsVal(tile2)) {
+						x--;
+					}
+					if (x == tile.x) {
+						return;
+					}
+					
+					moveEvent.hit = true;
+					moveEvent.tile2 = tile2;
+					moveEvent.isEqual = tile.equalsVal(tile2);
+					break;
+				}
 			}
+			
+			moveEvent.tile = tile;
+			moveEvent.newX = x;
+			moveEvent.newY = y;
+			tileMoveAction(moveEvent);
 		}
 	}
 	
 	private void moveTileLeft(Tile tile) {
 		if (tile == null) return;
-		int tx = tile.x;
-		int ty = tile.y;
+		int x = tile.x;
+		int y = tile.y;
+		MoveEvent moveEvent = new MoveEvent();
 		
-		if (tx > 0) {
-			if (!checkCord(tx - 1, ty)) {
-				moveTile(tile, tx - 1, ty);
-				moveTileLeft(tile);
-			} else {
-				Tile tile2 = getTileOrNull(tx - 1, ty);
-				mergeTiles(tile2, tile);
+		if (x != 0) {
+			while (x > 0) {
+				x--;
+				
+				if (isNotEmpty(x, y)) {
+					Tile tile2 = getTileOrNull(x, y);
+					
+					if (!tile.equalsVal(tile2)) {
+						x++;
+					}
+					if (x == tile.x) {
+						return;
+					}
+					
+					moveEvent.hit = true;
+					moveEvent.tile2 = tile2;
+					moveEvent.isEqual = tile.equalsVal(tile2);
+					break;
+				}
 			}
+			
+			moveEvent.tile = tile;
+			moveEvent.newX = x;
+			moveEvent.newY = y;
+			tileMoveAction(moveEvent);
 		}
 	}
 	
 	private void moveTileDown(Tile tile) {
 		if (tile == null) return;
-		int tx = tile.x;
-		int ty = tile.y;
+		int x = tile.x;
+		int y = tile.y;
+		MoveEvent moveEvent = new MoveEvent();
 		
-		if (ty < rows - 1) {
-			if (!checkCord(tx, ty + 1)) {
-				moveTile(tile, tx, ty + 1);
-				moveTileDown(tile);
-			} else {
-				Tile tile2 = getTileOrNull(tx, ty + 1);
-				mergeTiles(tile2, tile);
+		if (y != rows - 1) {
+			while (y < rows - 1) {
+				y++;
+				
+				if (isNotEmpty(x, y)) {
+					Tile tile2 = getTileOrNull(x, y);
+					
+					if (!tile.equalsVal(tile2)) {
+						y--;
+					}
+					if (y == tile.y) {
+						return;
+					}
+					
+					moveEvent.hit = true;
+					moveEvent.tile2 = tile2;
+					moveEvent.isEqual = tile.equalsVal(tile2);
+					break;
+				}
 			}
+			
+			moveEvent.tile = tile;
+			moveEvent.newX = x;
+			moveEvent.newY = y;
+			tileMoveAction(moveEvent);
 		}
 	}
 	
 	private void moveTileUp(Tile tile) {
 		if (tile == null) return;
-		int tx = tile.x;
-		int ty = tile.y;
+		int x = tile.x;
+		int y = tile.y;
+		MoveEvent moveEvent = new MoveEvent();
 		
-		if (ty > 0) {
-			if (!checkCord(tx, ty - 1)) {
-				moveTile(tile, tx, ty - 1);
-				moveTileUp(tile);
-			} else {
-				Tile tile2 = getTileOrNull(tx, ty - 1);
-				mergeTiles(tile2, tile);
+		if (y != 0) {
+			while (y > 0) {
+				y--;
+				
+				if (isNotEmpty(x, y)) {
+					Tile tile2 = getTileOrNull(x, y);
+					
+					if (!tile.equalsVal(tile2)) {
+						y++;
+					}
+					if (y == tile.y) {
+						return;
+					}
+					
+					moveEvent.hit = true;
+					moveEvent.tile2 = tile2;
+					moveEvent.isEqual = tile.equalsVal(tile2);
+					break;
+				}
 			}
+			
+			moveEvent.tile = tile;
+			moveEvent.newX = x;
+			moveEvent.newY = y;
+			tileMoveAction(moveEvent);
 		}
 	}
 	
 	// Moves field
 	
-	public void moveFieldRight() {
+	protected void shiftGridRight() {
 		for (int x = columns - 1; x >= 0; x--) {
 			for (int y = 0; y < rows; y++) {
 				moveTileRight(getTileOrNull(x, y));
@@ -159,7 +228,7 @@ abstract class TileGrid {
 		}
 	}
 	
-	public void moveFieldLeft() {
+	protected void shiftGridLeft() {
 		for (int x = 0; x < columns; x++) {
 			for (int y = 0; y < rows; y++) {
 				moveTileLeft(getTileOrNull(x, y));
@@ -167,7 +236,7 @@ abstract class TileGrid {
 		}
 	}
 	
-	public void moveFieldDown() {
+	protected void shiftGridDown() {
 		for (int x = 0; x < columns; x++) {
 			for (int y = rows - 1; y >= 0; y--) {
 				moveTileDown(getTileOrNull(x, y));
@@ -175,11 +244,34 @@ abstract class TileGrid {
 		}
 	}
 	
-	public void moveFieldUp() {
+	protected void shiftGridUp() {
 		for (int x = 0; x < columns; x++) {
 			for (int y = 0; y < rows; y++) {
 				moveTileUp(getTileOrNull(x, y));
 			}
+		}
+	}
+	
+	//
+	
+	static class MoveEvent {
+		Tile tile;
+		Tile tile2;
+		int newX;
+		int newY;
+		boolean hit = false;
+		boolean isEqual = false;
+		
+		@Override
+		public String toString() {
+			return "MoveEvent{" +
+				   "tile=" + tile +
+				   ", tile2=" + tile2 +
+				   ", newX=" + newX +
+				   ", newY=" + newY +
+				   ", isEqual=" + isEqual +
+				   ", hit=" + hit +
+				   '}';
 		}
 	}
 }

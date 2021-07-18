@@ -32,23 +32,24 @@ public class GameView extends View {
 			public void onDirectionDetected(Direction direction) {
 				switch (direction) {
 					case UP:
-						tileGridManager.swipeUp();
-						tileGridManager.placeRandomTile();
+						tileGridManager.shiftGridUp();
+//						tileGridManager.placeRandomTile();
 						break;
 					case DOWN:
-						tileGridManager.swipeDown();
-						tileGridManager.placeRandomTile();
+						tileGridManager.shiftGridDown();
+//						tileGridManager.placeRandomTile();
 						break;
 					case LEFT:
-						tileGridManager.swipeLeft();
-						tileGridManager.placeRandomTile();
+						tileGridManager.shiftGridLeft();
+//						tileGridManager.placeRandomTile();
 						break;
 					
 					case RIGHT:
-						tileGridManager.swipeRight();
-						tileGridManager.placeRandomTile();
+						tileGridManager.shiftGridRight();
+//						tileGridManager.placeRandomTile();
 						break;
 				}
+				tileGridManager.placeRandomTile();
 				invalidate();
 			}
 		};
@@ -183,9 +184,8 @@ public class GameView extends View {
 		return true;
 	}
 	
-	
 	public void restart() {
-		tileGridManager.clearGrid();
+		tileGridManager.cleanup();
 		invalidate();
 	}
 	
@@ -196,7 +196,10 @@ public class GameView extends View {
 	public void createGrid(int columns, int rows) {
 		this.columns = columns;
 		this.rows = rows;
+		
 		tileGridManager.createGrid(columns, rows);
+		tileGridManager.createTile(0, 0, 2);
+		tileGridManager.createTile(3, 0, 2);
 		
 		requestLayout();
 	}
