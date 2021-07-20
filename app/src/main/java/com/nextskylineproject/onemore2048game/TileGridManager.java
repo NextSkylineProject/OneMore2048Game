@@ -1,7 +1,5 @@
 package com.nextskylineproject.onemore2048game;
 
-import android.util.Log;
-
 import java.util.Random;
 
 class TileGridManager extends TileGrid {
@@ -34,16 +32,22 @@ class TileGridManager extends TileGrid {
 	
 	@Override
 	protected void tileSpawnAction(Tile tile, int x, int y) {
+		AnimationList.spawnAnim(this, tile);
 	}
 	
 	@Override
 	protected void tileMoveAction(MoveEvent moveEvent) {
-		if (moveEvent.hit) {
-			if (moveEvent.isEqual) {
-				mergeTile(moveEvent.tile, moveEvent.tile2);
+		if (moveEvent.hit()) {
+			if (moveEvent.isEqual() && !moveEvent.getHitTile().isLock()) {
+				removeTileFromGridOnly(moveEvent.getMovingTile());
+				moveEvent.getHitTile().upValue();
+				AnimationList.moveAndMergeAnim(this, moveEvent);
 				return;
 			}
+			AnimationList.moveAndHitAnim(this, moveEvent);
+		} else {
+			AnimationList.moveAnim(this, moveEvent);
 		}
-		replaceTile(moveEvent.tile, moveEvent.newX, moveEvent.newY);
+		replaceTile(moveEvent.getMovingTile(), moveEvent.getNewX(), moveEvent.getNewY());
 	}
 }

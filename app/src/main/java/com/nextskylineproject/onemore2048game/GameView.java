@@ -2,13 +2,15 @@ package com.nextskylineproject.onemore2048game;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Rect;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
-
 
 public class GameView extends View {
 	private static final String TAG = "Debug";
@@ -17,19 +19,22 @@ public class GameView extends View {
 	private int rows = 4;
 	private final TileGridManager tileGridManager;
 	private final SwipeDirectionDetector directionDetector;
-	
 	private int tileSize;
 	private int paddingLeft;
 	private int paddingTop;
 	private int offsetToCenterX;
 	private int offsetToCenterY;
+	private Bitmap tileBitmap;
+	private final Rect tempTileRect;
 	
-	public GameView(Context context) {
+	public GameView(Context context, AttributeSet attr) {
 		super(context);
 		
 		tileGridManager = new TileGridManager();
 		directionDetector = new SwipeDirectionDetector(context) {
 			public void onDirectionDetected(Direction direction) {
+//				if (tileGridManager.isAnimated()) return;
+				
 				switch (direction) {
 					case UP:
 						tileGridManager.shiftGridUp();
@@ -49,44 +54,18 @@ public class GameView extends View {
 //						tileGridManager.placeRandomTile();
 						break;
 				}
-				tileGridManager.placeRandomTile();
-				invalidate();
+//				tileGridManager.placeRandomTile();
+//				invalidate();
 			}
 		};
+		tempTileRect = new Rect(0, 0, 32, 32);
 		
-		/*
-		animator = ValueAnimator.ofFloat(0f, 1f);
-		animator.setDuration(5000);
-		animator.addListener(new AnimatorListenerAdapter() {
-			@Override
-			public void onAnimationStart(Animator animation) {
-				super.onAnimationStart(animation);
-				Log.d(TAG, "onAnimationStart: start anim");
-				
-			}
-			
-			@Override
-			public void onAnimationEnd(Animator animation) {
-				super.onAnimationEnd(animation);
-				Log.d(TAG, "onAnimationEnd: end anim");
-				
-				
-				
-			}
-		});
-		animator.addUpdateListener(valueAnimator -> {
-			animVal = (float) valueAnimator.getAnimatedValue();
-			
-			Log.d(TAG, "GameView: " + animVal);
-			
-			invalidate();
-		});
-//		animator.start();
-*/
+		loadResource();
 	}
 	
-	public GameView(Context context, AttributeSet attr) {
-		this(context);
+	public void loadResource() {
+		tileBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.tile);
+		Tile.setBitmap(tileBitmap);
 	}
 	
 	@Override
@@ -103,6 +82,7 @@ public class GameView extends View {
 		int tileWidth = areaWidth / columns;
 		int tileHeight = areaHeight / rows;
 		tileSize = Math.min(tileWidth, tileHeight);
+		Tile.setSize(tileSize);
 		
 		int tileAreaWidth = tileSize * columns;
 		int tileAreaHeight = tileSize * rows;
@@ -143,39 +123,29 @@ public class GameView extends View {
 			paint = new Paint();
 		}
 		
-		paint.setColor(Color.LTGRAY);
-		canvas.drawRoundRect(0, 0, getWidth(), getHeight(), 50, 50, paint);
-		paint.setColor(Color.GRAY);
-		canvas.drawRoundRect(paddingLeft, paddingTop, getWidth() - paddingLeft,
-				getHeight() - paddingTop, 25,
-				25, paint);
-//		paint.setColor(Color.GRAY);
-//		for (int y = 0; y < rows; y++) {
-//			for (int x = 0; x < columns; x++) {
-//				int rx = x * tileSize + paddingLeft + offsetToCenterX;
-//				int ry = y * tileSize + paddingTop + offsetToCenterY;
-//
-//				float[] hsv = {(1 + x) * (1 + y) * (rows + columns), 1, 1};
-//
-//				paint.setColor(Color.HSVToColor(hsv));
-//				canvas.drawRect(rx, ry, rx + tileSize, ry + tileSize, paint);
-//			}
-//		}
+		// background
+		{
+			paint.setColor(Color.LTGRAY);
+			canvas.drawRoundRect(0, 0, getWidth(), getHeight(), 50, 50, paint);
+			paint.setColor(Color.GRAY);
+			canvas.drawRoundRect(paddingLeft, paddingTop, getWidth() - paddingLeft,
+								 getHeight() - paddingTop, 25,
+								 25, paint);
+		}
+		
 		if (!tileGridManager.getTiles().isEmpty()) {
 			for (Tile tile : tileGridManager.getTiles()) {
-				int rx = tile.x * tileSize + paddingLeft + offsetToCenterX;
-				int ry = tile.y * tileSize + paddingTop + offsetToCenterY;
+				int rx = (int) (tile.screenX * tileSize) + paddingLeft + offsetToCenterX;
+				int ry = (int) (tile.screenY * tileSize) + paddingTop + offsetToCenterY;
 				
-				paint.setColor(Color.RED);
-				canvas.drawRoundRect(rx, ry, rx + tileSize, ry + tileSize, 25, 25, paint);
-				paint.setColor(Color.BLACK);
-				int fs = tileSize / 4;
-				paint.setTextSize(fs);
-				canvas.drawText("Val:" + tile.value, rx + 10, ry + fs, paint);
+				tempTileRect.set(rx, ry, rx + tileSize, ry + tileSize);
+				
+				tile.draw(canvas, paint, tempTileRect);
 			}
 		}
+		
+		invalidate();
 	}
-	
 	
 	@SuppressLint("ClickableViewAccessibility")
 	@Override
@@ -190,7 +160,8 @@ public class GameView extends View {
 	}
 	
 	public void stepBack() {
-		requestLayout();
+		tileGridManager.placeRandomTile();
+		invalidate();
 	}
 	
 	public void createGrid(int columns, int rows) {
@@ -198,8 +169,16 @@ public class GameView extends View {
 		this.rows = rows;
 		
 		tileGridManager.createGrid(columns, rows);
+		
 		tileGridManager.createTile(0, 0, 2);
-		tileGridManager.createTile(3, 0, 2);
+		tileGridManager.createTile(2, 0, 2);
+		tileGridManager.createTile(3, 0, 4);
+		tileGridManager.createTile(4, 0, 8);
+		
+		tileGridManager.createTile(0, 4, 2);
+		tileGridManager.createTile(2, 4, 2);
+		tileGridManager.createTile(3, 4, 2);
+		tileGridManager.createTile(4, 4, 2);
 		
 		requestLayout();
 	}
