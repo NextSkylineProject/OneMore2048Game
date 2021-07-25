@@ -54,8 +54,8 @@ abstract class TileGrid {
 	
 	protected void removeTileFromGridOnly(Tile tile) {
 		tilesGrid[tile.gridX][tile.gridY] = null;
-		tile.screenX = -1; // temp
-		tile.screenY = -1; // temp
+//		tile.screenX = -1; // temp
+//		tile.screenY = -1; // temp
 		tile.setInGrid(false);
 	}
 	
@@ -66,8 +66,8 @@ abstract class TileGrid {
 		}
 		tile.gridX = x;
 		tile.gridY = y;
-		tile.screenX = x; // temp
-		tile.screenY = y; // temp
+//		tile.screenX = x; // temp
+//		tile.screenY = y; // temp
 		tilesGrid[x][y] = tile;
 	}
 	
