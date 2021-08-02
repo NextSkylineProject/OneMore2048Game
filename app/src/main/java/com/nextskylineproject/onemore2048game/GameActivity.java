@@ -11,8 +11,6 @@ import android.widget.Button;
 
 public class GameActivity extends AppCompatActivity {
 	private static final String TAG = "Debug";
-	private int columns;
-	private int rows;
 	private GameView gameView;
 	
 	@Override
@@ -21,8 +19,8 @@ public class GameActivity extends AppCompatActivity {
 		setContentView(R.layout.activity_game);
 		
 		Intent intent = getIntent();
-		columns = intent.getIntExtra("game_columns", 4);
-		rows = intent.getIntExtra("game_rows", 4);
+		int columns = intent.getIntExtra("game_columns", 4);
+		int rows = intent.getIntExtra("game_rows", 4);
 		
 		int padding = 50;
 		ConstraintLayout cl = findViewById(R.id.gameLayout);
@@ -59,15 +57,7 @@ public class GameActivity extends AppCompatActivity {
 	
 	private void gameStart() {
 		// test temp code
-
-		gameView.createTile(0, 0, 2);
-		gameView.createTile(2, 0, 2);
-		gameView.createTile(3, 0, 4);
-		gameView.createTile(4, 0, 8);
-
-		gameView.createTile(0, 4, 2);
-		gameView.createTile(2, 4, 2);
-		gameView.createTile(3, 4, 2);
-		gameView.createTile(4, 4, 2);
+		gameView.placeRandomTile();
+		gameView.placeRandomTile();
 	}
 }

@@ -15,6 +15,7 @@ abstract class AnimationList {
 	}
 	
 	public static void moveAnim(TileGridManager tileGridManager, TileGrid.MoveEvent moveEvent) {
+		TileGridManager.setAnimated(true);
 		ValueAnimator anim = ValueAnimator.ofFloat();
 		anim.setDuration(animMoveDuration);
 		Tile tile = moveEvent.getMovingTile();
@@ -30,11 +31,19 @@ abstract class AnimationList {
 				tile.screenY = (float) valueAnimator.getAnimatedValue();
 			});
 		}
+		anim.addListener(new AnimatorListenerAdapter() {
+			@Override
+			public void onAnimationEnd(Animator animation) {
+				super.onAnimationEnd(animation);
+				TileGridManager.setAnimated(false);
+			}
+		});
 		anim.start();
 	}
 	
 	public static void moveAndHitAnim(TileGridManager tileGridManager,
 									  TileGrid.MoveEvent moveEvent) {
+		TileGridManager.setAnimated(true);
 		AnimatorSet animatorSet = new AnimatorSet();
 		
 		ValueAnimator anim = ValueAnimator.ofFloat();
@@ -58,13 +67,20 @@ abstract class AnimationList {
 		anim2.addUpdateListener(valueAnimator -> {
 		
 		});
-		
+		anim2.addListener(new AnimatorListenerAdapter() {
+			@Override
+			public void onAnimationEnd(Animator animation) {
+				super.onAnimationEnd(animation);
+				TileGridManager.setAnimated(false);
+			}
+		});
 		animatorSet.play(anim).before(anim2);
 		animatorSet.start();
 	}
 	
 	public static void moveAndMergeAnim(TileGridManager tileGridManager,
 										TileGrid.MoveEvent moveEvent) {
+		TileGridManager.setAnimated(true);
 		AnimatorSet animatorSet = new AnimatorSet();
 		
 		ValueAnimator anim = ValueAnimator.ofFloat();
@@ -98,6 +114,13 @@ abstract class AnimationList {
 //			tile2.scale = (float) valueAnimator.getAnimatedValue();
 			tile2.setScale((float) valueAnimator.getAnimatedValue());
 			
+		});
+		anim2.addListener(new AnimatorListenerAdapter() {
+			@Override
+			public void onAnimationEnd(Animator animation) {
+				super.onAnimationEnd(animation);
+				TileGridManager.setAnimated(false);
+			}
 		});
 		
 		animatorSet.play(anim).before(anim2);

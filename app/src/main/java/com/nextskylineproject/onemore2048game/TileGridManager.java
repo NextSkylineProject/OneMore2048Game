@@ -6,6 +6,8 @@ class TileGridManager extends TileGrid {
 	private static final String TAG = "Debug";
 	private final Random random;
 	
+	private static boolean animated;
+	
 	public TileGridManager() {
 		random = new Random();
 		random.setSeed(12345L);
@@ -49,5 +51,13 @@ class TileGridManager extends TileGrid {
 			AnimationList.moveAnim(this, moveEvent);
 		}
 		replaceTile(moveEvent.getMovingTile(), moveEvent.getNewX(), moveEvent.getNewY());
+	}
+	
+	public static boolean isAnimated() {
+		return animated;
+	}
+	
+	public static void setAnimated(boolean animated) {
+		TileGridManager.animated = animated;
 	}
 }

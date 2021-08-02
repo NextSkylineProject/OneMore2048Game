@@ -30,7 +30,7 @@ public class GameView extends View {
 		tileGridManager = new TileGridManager();
 		directionDetector = new SwipeDirectionDetector(context) {
 			public void onDirectionDetected(Direction direction) {
-//				if (tileGridManager.isAnimated()) return;
+				if (TileGridManager.isAnimated()) return;
 				
 				switch (direction) {
 					case UP:
@@ -51,7 +51,7 @@ public class GameView extends View {
 //						tileGridManager.placeRandomTile();
 						break;
 				}
-//				tileGridManager.placeRandomTile();
+				tileGridManager.placeRandomTile();
 //				invalidate();
 			}
 		};
@@ -169,5 +169,9 @@ public class GameView extends View {
 	
 	public void createTile(int x, int y, int val) {
 		tileGridManager.createTile(x, y, val);
+	}
+	
+	public void placeRandomTile() {
+		tileGridManager.placeRandomTile();
 	}
 }
